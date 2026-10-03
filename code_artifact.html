@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متابع الحصة الرياضية - التطبيق المدرسي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom scrollbar for better appearance */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3 space-x-reverse cursor-pointer" onclick="goHome()">
+                <div class="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                    <i class="fa-solid fa-clipboard-user text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">متابع الحصة الرياضية</h1>
+                    <p class="text-xs text-emerald-100" id="headerSubtitle">إدارة متابعة وتلاميذ الأقسام</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Backup & Restore -->
+                <button onclick="openModal('backupModal')" title="نسخ احتياطي واستعادة" class="p-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-xl transition text-sm flex items-center gap-1">
+                    <i class="fa-solid fa-database"></i>
+                </button>
+                <!-- Install PWA Button -->
+                <button id="pwaInstallBtn" onclick="installPWA()" class="hidden bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm transition items-center gap-1">
+                    <i class="fa-solid fa-download"></i>
+                    <span>تثبيت</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-1">
+        
+        <!-- View 1: Classes View (Home) -->
+        <section id="classesView" class="space-y-6">
+            <!-- Welcome Banner & Quick Stats -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">قائمة الأقسام الدراسية 🏫</h2>
+                    <p class="text-sm text-slate-500 mt-1">اختر قسماً لتسجيل الملاحظات والغيابات أو أدخل قسماً جديداً.</p>
+                </div>
+                <button onclick="openModal('addClassModal')" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-4 py-2.5 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>إضافة قسم جديد</span>
+                </button>
+            </div>
+
+            <!-- Classes Grid -->
+            <div id="classesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <!-- Rendered Dynamically -->
+            </div>
+        </section>
+
+        <!-- View 2: Single Class View (Students List) -->
+        <section id="classDetailsView" class="hidden space-y-6">
+            <!-- Top Controls & Class Header -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <button onclick="goHome()" class="text-slate-600 hover:text-emerald-600 font-semibold text-sm flex items-center gap-2 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition">
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <span>الرجوع للأقسام</span>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openModal('addReasonModal')" class="bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-gear"></i>
+                            <span>إدارة أسباب عدم المشاركة</span>
+                        </button>
+                        <button onclick="openModal('addStudentModal')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-user-plus"></i>
+                            <span>تلميذ جديد</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+                    <div>
+                        <h2 id="currentClassName" class="text-2xl font-black text-slate-800">1م1</h2>
+                        <p class="text-xs text-slate-500 mt-0.5" id="studentsCountText">0 تلميذ مسجل</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="studentSearchInput" oninput="filterStudents()" placeholder="بحث عن تلميذ..." class="text-xs bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl px-3 py-2 outline-none w-36 sm:w-48 transition">
+                    </div>
+                </div>
+
+                <!-- Class Statistics Summary Bar -->
+                <div id="classStatsBar" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-center text-xs">
+                    <!-- Dynamic stats chips -->
+                </div>
+            </div>
+
+            <!-- Students List -->
+            <div id="studentsList" class="space-y-3">
+                <!-- Rendered Dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8 text-center text-xs text-slate-500">
+        <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>متابع الحصة الرياضية &copy; <span id="yearSpan"></span> - يعمل بشكل كامل بدون إنترنت (PWA)</p>
+            <p class="text-slate-400">جميع البيانات محفوظة آمنة على جهازك المحمول</p>
+        </div>
+    </footer>
+
+    <!-- MODAL: Add Class -->
+    <div id="addClassModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-lg">إضافة قسم جديد ➕</h3>
+                <button onclick="closeModal('addClassModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">اسم القسم (مثال: 1م1)</label>
+                <input type="text" id="newClassNameInput" placeholder="أدخل اسم القسم هنا..." class="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeModal('addClassModal')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">إلغاء</button>
+                <button onclick="createNewClass()" class="px-4 py-2 text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl shadow-md">إضافة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Add / Edit Student -->
+    <div id="addStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 id="studentModalTitle" class="font-bold text-slate-800 text-lg">إضافة تلميذ جديد 👤</h3>
+                <button onclick="closeModal('addStudentModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <input type="hidden" id="editingStudentId">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">اسم ولقب التلميذ</label>
+                <input type="text" id="studentNameInput" placeholder="مثال: محمد بن علي" class="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-3 py-2.5 outline-none text-slate-800 font-semibold">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeModal('addStudentModal')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">إلغاء</button>
+                <button onclick="saveStudent()" class="px-4 py-2 text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl shadow-md">حفظ البيانات</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Student History Log -->
+    <div id="studentHistoryModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                    <h3 id="historyStudentName" class="font-bold text-slate-800 text-lg">سجل الملاحظات</h3>
+                    <p class="text-xs text-slate-500">التاريخ الزمني لجميع الأعذار والملاحظات المسجلة</p>
+                </div>
+                <button onclick="closeModal('studentHistoryModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <input type="hidden" id="historyStudentId">
+
+            <div id="historyLogsContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 my-2">
+                <!-- Log entries dynamically added here -->
+            </div>
+
+            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                <button onclick="clearStudentLogs()" class="text-xs text-rose-600 hover:text-rose-700 font-bold hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition">
+                    <i class="fa-solid fa-trash-can ml-1"></i>مسح الكشف بالكامل
+                </button>
+                <button onclick="closeModal('studentHistoryModal')" class="px-4 py-2 text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Custom Reasons Manager -->
+    <div id="addReasonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-lg">إدارة الأسباب والأعذار ⚙️</h3>
+                <button onclick="closeModal('addReasonModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <!-- Add New Reason Form -->
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                <span class="text-xs font-bold text-slate-700 block">إضافة سبب جديد:</span>
+                <div class="flex gap-2">
+                    <input type="text" id="newReasonEmoji" placeholder="أيقونة/إيموجي" class="w-20 bg-white border border-slate-200 text-center rounded-lg px-2 py-1.5 text-sm outline-none">
+                    <input type="text" id="newReasonText" placeholder="اسم السبب (مثال: إصابة)" class="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none">
+                    <button onclick="addNewCustomReason()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition">إضافة</button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-2 my-2">
+                <span class="text-xs font-bold text-slate-500 block mb-1">الأسباب المعتمدة حالياً:</span>
+                <div id="reasonsListContainer" class="space-y-1.5">
+                    <!-- Reasons rendered dynamically -->
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-slate-100">
+                <button onclick="closeModal('addReasonModal')" class="px-4 py-2 text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Backup / Export / Import -->
+    <div id="backupModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-lg">النسخ الاحتياطي ونقل البيانات 📦</h3>
+                <button onclick="closeModal('backupModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <p class="text-xs text-slate-600 leading-relaxed">يمكنك تحميل كافة الأقسام والتلاميذ وسجلات الغياب في ملف أحادي، أو استرجاع بياناتك السابقة عند تغيير الهاتف.</p>
+
+            <div class="space-y-3 pt-2">
+                <button onclick="exportData()" class="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold p-3 rounded-xl flex items-center justify-between transition text-xs">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-file-export text-emerald-600 text-lg"></i>
+                        <span>تصدير نسخة احتياطية (تحميل ملف)</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+
+                <label class="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 font-bold p-3 rounded-xl flex items-center justify-between cursor-pointer transition text-xs">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-file-import text-purple-600 text-lg"></i>
+                        <span>استيراد نسخة احتياطية من الهاتف</span>
+                    </div>
+                    <input type="file" id="importFileInput" accept=".json" onchange="importData(event)" class="hidden">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </label>
+
+                <button onclick="resetAllData()" class="w-full bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold p-3 rounded-xl flex items-center justify-between transition text-xs">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-rose-600 text-lg"></i>
+                        <span>مسح كافة بيانات التطبيق</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-slate-100">
+                <button onclick="closeModal('backupModal')" class="px-4 py-2 text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2 pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">تم الحفظ بنجاح</span>
+    </div>
+
+    <script>
+        // --- DATA STRUCTURE & INITIAL STATE ---
+        const DEFAULT_REASONS = [
+            { id: 'wear', emoji: '👕', label: 'اللباس' },
+            { id: 'sick', emoji: '🤒', label: 'مريض' },
+            { id: 'absent', emoji: '🚫', label: 'غائب' },
+            { id: 'no_reason', emoji: '❓', label: 'بدون سبب' },
+            { id: 'exempt', emoji: '📜', label: 'معفى' }
+        ];
+
+        const DEFAULT_CLASSES = ['1م1', '1م2', '1م3', '2م1', '2م2', '3م1', '3م2', '4م1', '4م2'];
+
+        let appData = {
+            classes: [], // Array of class objects: { id, name }
+            students: [], // Array of student objects: { id, classId, name }
+            reasons: [...DEFAULT_REASONS], // Configurable reasons list
+            logs: [] // Array of log records: { id, studentId, classId, reasonId, reasonLabel, emoji, timestamp }
+        };
+
+        let currentClassId = null;
+
+        // --- LOCAL STORAGE HANDLING ---
+        function loadAppData() {
+            const saved = localStorage.getItem('pe_teacher_app_data');
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                    if (!appData.reasons || appData.reasons.length === 0) {
+                        appData.reasons = [...DEFAULT_REASONS];
+                    }
+                } catch (e) {
+                    console.error("Failed to parse saved data", e);
+                    initDefaultData();
+                }
+            } else {
+                initDefaultData();
+            }
+        }
+
+        function saveAppData() {
+            localStorage.setItem('pe_teacher_app_data', JSON.stringify(appData));
+        }
+
+        function initDefaultData() {
+            appData.classes = DEFAULT_CLASSES.map(name => ({
+                id: 'cls_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                name: name
+            }));
+            appData.students = [];
+            appData.reasons = [...DEFAULT_REASONS];
+            appData.logs = [];
+            saveAppData();
+        }
+
+        function goHome() {
+            currentClassId = null;
+            document.getElementById('classesView').classList.remove('hidden');
+            document.getElementById('classDetailsView').classList.add('hidden');
+            document.getElementById('headerSubtitle').textContent = "إدارة متابعة وتلاميذ الأقسام";
+            renderClassesGrid();
+        }
+
+        function openClassDetails(classId) {
+            currentClassId = classId;
+            const targetClass = appData.classes.find(c => c.id === classId);
+            if (!targetClass) return;
+
+            document.getElementById('classesView').classList.add('hidden');
+            document.getElementById('classDetailsView').classList.remove('hidden');
+            document.getElementById('currentClassName').textContent = targetClass.name;
+            document.getElementById('headerSubtitle').textContent = "قسم: " + targetClass.name;
+            document.getElementById('studentSearchInput').value = "";
+
+            renderStudentsList();
+        }
+
+        function renderClassesGrid() {
+            const container = document.getElementById('classesGrid');
+            container.innerHTML = '';
+
+            appData.classes.forEach(cls => {
+                const classStudents = appData.students.filter(s => s.classId === cls.id);
+                
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition cursor-pointer relative group flex flex-col justify-between h-36";
+                card.onclick = () => openClassDetails(cls.id);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black text-base border border-emerald-100">
+                            ${cls.name.substring(0, 3)}
+                        </div>
+                        <button onclick="event.stopPropagation(); deleteClass('${cls.id}')" title="حذف القسم" class="opacity-80 sm:opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-600 p-1.5 transition">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        </button>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-slate-800 text-lg">${cls.name}</h3>
+                        <p class="text-xs text-slate-400 font-medium mt-0.5">${classStudents.length} تلميذ</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function createNewClass() {
+            const input = document.getElementById('newClassNameInput');
+            const name = input.value.trim();
+            if (!name) {
+                showToast('يرجى إدخال اسم القسم', true);
+                return;
+            }
+
+            const newClass = {
+                id: 'cls_' + Date.now(),
+                name: name
+            };
+
+            appData.classes.push(newClass);
+            saveAppData();
+            input.value = '';
+            closeModal('addClassModal');
+            renderClassesGrid();
+            showToast('تمت إضافة القسم بنجاح');
+        }
+
+        function deleteClass(classId) {
+            const targetClass = appData.classes.find(c => c.id === classId);
+            if (!targetClass) return;
+
+            if (confirm(`هل أنت تأكد من حذف القسم (${targetClass.name}) مع كافة التلاميد وسجلاتهم؟`)) {
+                appData.classes = appData.classes.filter(c => c.id !== classId);
+                appData.students = appData.students.filter(s => s.classId !== classId);
+                appData.logs = appData.logs.filter(l => l.classId !== classId);
+                saveAppData();
+                renderClassesGrid();
+                showToast('تم حذف القسم بنجاح');
+            }
+        }
+
+        function renderStudentsList() {
+            if (!currentClassId) return;
+
+            const container = document.getElementById('studentsList');
+            const searchVal = document.getElementById('studentSearchInput').value.trim().toLowerCase();
+            container.innerHTML = '';
+
+            let classStudents = appData.students.filter(s => s.classId === currentClassId);
+            
+            // Update count display
+            document.getElementById('studentsCountText').textContent = `${classStudents.length} تلميذ مسجل`;
+
+            if (searchVal) {
+                classStudents = classStudents.filter(s => s.name.toLowerCase().includes(searchVal));
+            }
+
+            // Update Class Stats Summary
+            renderClassStats();
+
+            if (classStudents.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-100 text-slate-400 space-y-2">
+                        <i class="fa-solid fa-users-slash text-3xl text-slate-300"></i>
+                        <p class="text-sm">لا يوجد تلاميذ في هذا القسم حالياً</p>
+                        <button onclick="openModal('addStudentModal')" class="text-xs text-emerald-600 font-bold underline">إضافة تلميذ جديد</button>
+                    </div>
+                `;
+                return;
+            }
+
+            classStudents.forEach((student, index) => {
+                const studentLogs = appData.logs.filter(l => l.studentId === student.id);
+                const lastLog = studentLogs.length > 0 ? studentLogs[studentLogs.length - 1] : null;
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition space-y-3";
+
+                // Generate Buttons for Reasons
+                let reasonsHtml = '';
+                appData.reasons.forEach(r => {
+                    reasonsHtml += `
+                        <button onclick="registerReason('${student.id}', '${r.id}')" class="flex-1 min-w-[70px] bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 border border-slate-200 hover:border-emerald-200 rounded-xl py-1.5 px-2 text-xs font-bold transition flex items-center justify-center gap-1">
+                            <span>${r.emoji}</span>
+                            <span>${r.label}</span>
+                        </button>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+                        <div class="flex items-center space-x-2.5 space-x-reverse">
+                            <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs flex items-center justify-center">${index + 1}</span>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm sm:text-base">${student.name}</h4>
+                                ${lastLog ? `
+                                    <p class="text-[10px] text-slate-400 flex items-center gap-1">
+                                        <span>آخر ملاحظة:</span>
+                                        <span class="font-semibold text-slate-600">${lastLog.emoji} ${lastLog.reasonLabel}</span>
+                                        <span>(${formatDate(lastLog.timestamp)})</span>
+                                    </p>
+                                ` : `<p class="text-[10px] text-slate-300">لا توجد ملاحظات مسجلة</p>`}
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1">
+                            <button onclick="openHistoryModal('${student.id}')" title="عرض السجل التاريخي" class="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition relative">
+                                <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                                ${studentLogs.length > 0 ? `<span class="absolute -top-1 -right-1 bg-purple-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">${studentLogs.length}</span>` : ''}
+                            </button>
+                            <button onclick="openEditStudentModal('${student.id}')" title="تعديل الاسم" class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition">
+                                <i class="fa-solid fa-pen text-sm"></i>
+                            </button>
+                            <button onclick="deleteStudent('${student.id}')" title="حذف التلميذ" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Reason Action Buttons -->
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        ${reasonsHtml}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function filterStudents() {
+            renderStudentsList();
+        }
+
+        function openEditStudentModal(studentId) {
+            const student = appData.students.find(s => s.id === studentId);
+            if (!student) return;
+
+            document.getElementById('studentModalTitle').textContent = "تعديل بيانات التلميذ ✏️";
+            document.getElementById('editingStudentId').value = student.id;
+            document.getElementById('studentNameInput').value = student.name;
+            openModal('addStudentModal');
+        }
+
+        function saveStudent() {
+            const nameInput = document.getElementById('studentNameInput');
+            const editingId = document.getElementById('editingStudentId').value;
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showToast('يرجى إدخال اسم التلميذ', true);
+                return;
+            }
+
+            if (editingId) {
+                // Edit existing
+                const student = appData.students.find(s => s.id === editingId);
+                if (student) student.name = name;
+                showToast('تم تعديل اسم التلميذ بنجاح');
+            } else {
+                // Create new
+                const newStudent = {
+                    id: 'std_' + Date.now(),
+                    classId: currentClassId,
+                    name: name
+                };
+                appData.students.push(newStudent);
+                showToast('تمت إضافة التلميذ بنجاح');
+            }
+
+            saveAppData();
+            closeModal('addStudentModal');
+            nameInput.value = '';
+            document.getElementById('editingStudentId').value = '';
+            renderStudentsList();
+        }
+
+        function deleteStudent(studentId) {
+            const student = appData.students.find(s => s.id === studentId);
+            if (!student) return;
+
+            if (confirm(`هل أنت تأكد من حذف التلميذ (${student.name}) وسجله؟`)) {
+                appData.students = appData.students.filter(s => s.id !== studentId);
+                appData.logs = appData.logs.filter(l => l.studentId !== studentId);
+                saveAppData();
+                renderStudentsList();
+                showToast('تم حذف التلميذ بنجاح');
+            }
+        }
+
+        function registerReason(studentId, reasonId) {
+            const reasonObj = appData.reasons.find(r => r.id === reasonId);
+            if (!reasonObj) return;
+
+            const newLog = {
+                id: 'log_' + Date.now(),
+                studentId: studentId,
+                classId: currentClassId,
+                reasonId: reasonId,
+                reasonLabel: reasonObj.label,
+                emoji: reasonObj.emoji,
+                timestamp: new Date().toISOString()
+            };
+
+            appData.logs.push(newLog);
+            saveAppData();
+            renderStudentsList();
+            showToast(`تم تسجيل: ${reasonObj.emoji} ${reasonObj.label}`);
+        }
+
+        function openHistoryModal(studentId) {
+            const student = appData.students.find(s => s.id === studentId);
+            if (!student) return;
+
+            document.getElementById('historyStudentId').value = studentId;
+            document.getElementById('historyStudentName').textContent = `سجل التلميذ: ${student.name}`;
+            renderStudentHistoryLogs(studentId);
+            openModal('studentHistoryModal');
+        }
+
+        function renderStudentHistoryLogs(studentId) {
+            const container = document.getElementById('historyLogsContainer');
+            container.innerHTML = '';
+
+            const logs = appData.logs.filter(l => l.studentId === studentId).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-xs">
+                        لا توجد ملاحظات أو أعذار مسجلة لهذا التلميذ حتى الآن.
+                    </div>
+                `;
+                return;
+            }
+
+            logs.forEach(log => {
+                const item = document.createElement('div');
+                item.className = "bg-slate-50 border border-slate-200 p-2.5 rounded-xl flex items-center justify-between text-xs";
+
+                item.innerHTML = `
+                    <div class="flex items-center space-x-2 space-x-reverse">
+                        <span class="text-base">${log.emoji}</span>
+                        <div>
+                            <span class="font-bold text-slate-800">${log.reasonLabel}</span>
+                            <span class="block text-[10px] text-slate-400">${formatDate(log.timestamp)} - ${formatTime(log.timestamp)}</span>
+                        </div>
+                    </div>
+                    <button onclick="deleteLogEntry('${log.id}', '${studentId}')" title="حذف السجل" class="text-slate-300 hover:text-rose-600 p-1 transition">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function deleteLogEntry(logId, studentId) {
+            appData.logs = appData.logs.filter(l => l.id !== logId);
+            saveAppData();
+            renderStudentHistoryLogs(studentId);
+            renderStudentsList();
+            showToast('تم حذف الملاحظة');
+        }
+
+        function clearStudentLogs() {
+            const studentId = document.getElementById('historyStudentId').value;
+            if (!studentId) return;
+
+            if (confirm('هل ترغب في مسح كامل الملاحظات المسجلة لهذا التلميذ؟')) {
+                appData.logs = appData.logs.filter(l => l.studentId !== studentId);
+                saveAppData();
+                renderStudentHistoryLogs(studentId);
+                renderStudentsList();
+                showToast('تم مسح كشف التلميذ بالكامل');
+            }
+        }
+
+        function renderClassStats() {
+            const container = document.getElementById('classStatsBar');
+            if (!container || !currentClassId) return;
+
+            const classLogs = appData.logs.filter(l => l.classId === currentClassId);
+            
+            // Count totals per reason
+            const counts = {};
+            appData.reasons.forEach(r => counts[r.id] = 0);
+
+            classLogs.forEach(log => {
+                if (counts[log.reasonId] !== undefined) {
+                    counts[log.reasonId]++;
+                }
+            });
+
+            container.innerHTML = '';
+            appData.reasons.forEach(r => {
+                const chip = document.createElement('div');
+                chip.className = "bg-slate-50 border border-slate-100 p-1.5 rounded-xl flex items-center justify-center gap-1.5";
+                chip.innerHTML = `
+                    <span>${r.emoji}</span>
+                    <span class="text-slate-600 font-semibold">${r.label}:</span>
+                    <span class="font-black text-slate-800">${counts[r.id] || 0}</span>
+                `;
+                container.appendChild(chip);
+            });
+        }
+
+        function renderReasonsList() {
+            const container = document.getElementById('reasonsListContainer');
+            container.innerHTML = '';
+
+            appData.reasons.forEach(r => {
+                const isDefault = DEFAULT_REASONS.some(d => d.id === r.id);
+                const item = document.createElement('div');
+                item.className = "bg-white border border-slate-200 p-2 rounded-xl flex items-center justify-between text-xs";
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">${r.emoji}</span>
+                        <span class="font-bold text-slate-800">${r.label}</span>
+                    </div>
+                    ${!isDefault ? `
+                        <button onclick="removeCustomReason('${r.id}')" class="text-rose-500 hover:text-rose-700 text-xs font-semibold px-2 py-1 rounded hover:bg-rose-50 transition">
+                            <i class="fa-solid fa-trash-can ml-1"></i>حذف
+                        </button>
+                    ` : `<span class="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">أساسي</span>`}
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function addNewCustomReason() {
+            const emojiInput = document.getElementById('newReasonEmoji');
+            const textInput = document.getElementById('newReasonText');
+
+            const emoji = emojiInput.value.trim() || '📌';
+            const label = textInput.value.trim();
+
+            if (!label) {
+                showToast('يرجى كتابة سبب المعاينة', true);
+                return;
+            }
+
+            const newReason = {
+                id: 'custom_' + Date.now(),
+                emoji: emoji,
+                label: label
+            };
+
+            appData.reasons.push(newReason);
+            saveAppData();
+
+            emojiInput.value = '';
+            textInput.value = '';
+            renderReasonsList();
+            renderStudentsList();
+            showToast('تمت إضافة السبب الجديد بنجاح');
+        }
+
+        function removeCustomReason(reasonId) {
+            if (confirm('هل أنت تأكد من حذف هذا السبب المخصص؟')) {
+                appData.reasons = appData.reasons.filter(r => r.id !== reasonId);
+                saveAppData();
+                renderReasonsList();
+                renderStudentsList();
+                showToast('تم حذف السبب المخصص');
+            }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0, 10);
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `PE_Teacher_Backup_${dateStr}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast('تم تصدير النسخة الاحتياطية بنجاح');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported && imported.classes && imported.students) {
+                        appData = imported;
+                        saveAppData();
+                        closeModal('backupModal');
+                        goHome();
+                        showToast('تم استيراد البيانات بنجاح!');
+                    } else {
+                        showToast('تنسيق ملف النسخة الاحتياطية غير صحيح', true);
+                    }
+                } catch (err) {
+                    showToast('خطأ أثناء قراءة الملف', true);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetAllData() {
+            if (confirm('تنبيه هام! هل ترغب بالفعل في مسح كافة الأقسام والتلاميذ والسجلات كلياً؟')) {
+                localStorage.removeItem('pe_teacher_app_data');
+                initDefaultData();
+                closeModal('backupModal');
+                goHome();
+                showToast('تمت إعادة ضبط التطبيق بالكامل');
+            }
+        }
+
+        function openModal(modalId) {
+            if (modalId === 'addStudentModal' && !document.getElementById('editingStudentId').value) {
+                document.getElementById('studentModalTitle').textContent = "إضافة تلميذ جديد 👤";
+                document.getElementById('studentNameInput').value = '';
+            }
+            if (modalId === 'addReasonModal') {
+                renderReasonsList();
+            }
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = msg;
+            if (isError) {
+                toastIcon.className = "fa-solid fa-circle-xmark text-rose-400";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function formatDate(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function formatTime(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // PWA Installation handling
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const pwaBtn = document.getElementById('pwaInstallBtn');
+            if (pwaBtn) pwaBtn.classList.remove('hidden');
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('pwaInstallBtn').classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // Initialization
+        window.onload = function() {
+            document.getElementById('yearSpan').textContent = new Date().getFullYear();
+            loadAppData();
+            renderClassesGrid();
+        };
+    </script>
+</body>
+</html>
